@@ -15,9 +15,12 @@
 ///////////
 var man = new Man();
 
+
+
 ///////////////
 //main script//
 ///////////////
+
 window.onload = function(){
 	document.body.appendChild(canvas);
 	animate(step);
@@ -38,12 +41,13 @@ var update = function(){
 	//if (!JUMP){
 	//	ON_GROUND = man.is_on_ground();
 	//}
+	man.update_center_of_mass(g);
 
-	man.draw();
 }
 
 var render = function(){
-
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	man.draw();
 }
 
 

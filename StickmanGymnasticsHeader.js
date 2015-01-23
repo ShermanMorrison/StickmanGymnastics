@@ -28,6 +28,8 @@ dt = .2;
 
 ground = height - 20;
 
+
+
 ////////////////////
 //global functions//
 ////////////////////
@@ -37,6 +39,7 @@ var angle_to_vector = function(angle){
 	//alert(Math.sin(angle) + ", " + Math.cos(angle));
 	return [Math.sin(angle), Math.cos(angle)]; // angle is from downwards vertical
 }
+
 
 /////////////////////
 //class definitions//
@@ -62,13 +65,13 @@ function Limb(pos1,angle,length){
 	
 
 }
-Limb.prototype.draw = function(){
+Limb.prototype.draw = function(offset){
 	//var ctx=canvas.getContext("2d");
 	context.beginPath();
 	//document.write("pos1 = " + this.pos1);
 	//document.write("pos2 = " + this.pos2);	
-	context.moveTo(this.pos1[0],this.pos1[1]);
-	context.lineTo(this.pos2[0],this.pos2[1]);
+	context.moveTo(this.pos1[0] + offset[0], this.pos1[1] + offset[1]);
+	context.lineTo(this.pos2[0] + offset[0], this.pos2[1] + offset[1]);
 	context.stroke();
 }
 Limb.prototype.get_pos1 = function(){
@@ -131,30 +134,17 @@ function Man(){
 	//right lower leg
 	this.limbList.push(new Limb([xc + angle_to_vector(this.limbAngles[6])[0] * this.limbLengths[6],yc + angle_to_vector(this.limbAngles[6])[1] * this.limbLengths[6]],this.limbAngles[8],this.limbLengths[8]));	
 
-}
 
-Man.prototype.is_on_ground = function(){
-	for (var limb in this.limbList) {
-		if (limb.length >= 2){
-			if (limb.pos2[1] > ground) {  // TODO!! IMPLEMENT get_pos2 & initialize ground !!
-				return True;
-			}
-		}
-	}
+	this.origCenterOfMass = this.get_center_of_mass();
+	this.centerOfMass = this.get_center_of_mass(); //this will be updated as stickman moves
 
-	head_pos = [this.limbList[0].get_pos1()[0] - 0.2 * (this.limbList[0].get_pos2()[0] - 
-					this.limbList[0].get_pos1()[0]), 
-				this.limbList[0].get_pos1()[1] - .2*(this.limbList[0].get_pos2()[1] - 
-					this.limbList[0].get_pos1()[1]) ];
-
-	if (head_pos[1] > ground) {
-		return true;
-	}
-	return false;
+	this.vel = [0,0];
+	this.diff = [0,0];
 }
 Man.prototype.draw = function(){
 	//draw head
- 	headPos = [this.limbList[0].get_pos1()[0] - .2*(this.limbList[0].get_pos2()[0] - this.limbList[0].get_pos1()[0])  , this.limbList[0].get_pos1()[1] - .2*(this.limbList[0].get_pos2()[1] - this.limbList[0].get_pos1()[1])]
+ 	headPos = [this.diff[0] + this.limbList[0].get_pos1()[0] - .2*(this.limbList[0].get_pos2()[0] - this.limbList[0].get_pos1()[0]), 
+ 				this.diff[1] + this.limbList[0].get_pos1()[1] - .2*(this.limbList[0].get_pos2()[1] - this.limbList[0].get_pos1()[1])]
  	context.beginPath();
 	context.arc(headPos[0], headPos[1], 8, 2*Math.PI, false);
 	context.fillStyle = "#000000";
@@ -165,7 +155,79 @@ Man.prototype.draw = function(){
 		//document.write("limblist.length = " + this.limbList.length);
 		//document.write("this.limblist[limb] = " + this.limbList[limb]);
 		 if (this.limbList[limb] != null){
-		 	this.limbList[limb].draw();
+		 	this.limbList[limb].draw(this.diff);
 		 }
 	}
+}
+Man.prototype.is_on_ground = function(){
+	for (var limb in this.limbList) {
+		if (limb.length >= 2){
+			if (limb.pos2[1] > ground) {  // TODO!! IMPLEMENT get_pos2 & initialize ground !!
+				return True;
+			}
+		}
+	}
+
+	head_pos = this.get_head_pos();
+
+	if (head_pos[1] > ground) {
+		return true;
+	}
+	return false;
+}
+Man.prototype.get_head_pos = function(){
+	return [this.limbList[0].get_pos1()[0] - 0.2 * (this.limbList[0].get_pos2()[0] - 
+					this.limbList[0].get_pos1()[0]), 
+				this.limbList[0].get_pos1()[1] - .2*(this.limbList[0].get_pos2()[1] - 
+					this.limbList[0].get_pos1()[1]) ];
+}
+Man.prototype.get_center_of_mass = function(){
+	xCenters = [];
+    yCenters = [];
+    xcm = 0;
+    ycm = 0;
+    
+    totWeight = 0;
+
+    for (var limbo in this.limbList){
+    	limb = this.limbList[limbo];
+    	totWeight += limb.len;
+    	try{
+	    	xCenters.push(limb.get_pos1()[0] + limb.get_pos2()[0] * .5);
+			yCenters.push(limb.get_pos1()[1] + limb.get_pos2()[1] * .5);
+		}
+		catch(err){
+			document.write("limb in limbList has l1 = " + this.limbList[0] + " ");
+		}
+    }
+
+    //add head weight
+    try{
+    	neckBase = this.limbList[0].get_pos1();
+	}
+	catch(err){
+		document.write("limbList[0].get_pos1() method is null");
+	}
+    headPos = this.get_head_pos();
+
+    totWeight += headWeight;
+
+    for (var i = 0; i < this.limbList.length; i++){
+    	xcm += (xCenters[i] * this.limbLengths[i])/totWeight;
+    	ycm += (yCenters[i] * this.limbLengths[i])/totWeight;
+    }
+
+    xcm += headPos[0] * headWeight / totWeight;
+    ycm += headPos[1] * headWeight / totWeight;
+
+    return [xcm, ycm];
+}
+Man.prototype.update_center_of_mass = function(accel){
+	for (var i = 0; i < 2; i++){
+		this.centerOfMass[i] += this.vel[0] * dt + 0.5 * accel * Math.pow(dt, 2);
+		this.vel[i] += accel[i] * dt;
+	}
+	//this.diff = [this.centerOfMass[0] - this.origCenterOfMass[0],
+				//this.centerOfMass[1] - this.origCenterOfMass[1]];
+	this.diff[1] += 5;
 }
