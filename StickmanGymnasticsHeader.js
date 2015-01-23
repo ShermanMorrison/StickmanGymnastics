@@ -159,22 +159,6 @@ Man.prototype.draw = function(){
 		 }
 	}
 }
-Man.prototype.is_on_ground = function(){
-	for (var limb in this.limbList) {
-		if (limb.length >= 2){
-			if (limb.pos2[1] > ground) {  // TODO!! IMPLEMENT get_pos2 & initialize ground !!
-				return True;
-			}
-		}
-	}
-
-	head_pos = this.get_head_pos();
-
-	if (head_pos[1] > ground) {
-		return true;
-	}
-	return false;
-}
 Man.prototype.get_head_pos = function(){
 	return [this.limbList[0].get_pos1()[0] - 0.2 * (this.limbList[0].get_pos2()[0] - 
 					this.limbList[0].get_pos1()[0]), 
@@ -224,10 +208,21 @@ Man.prototype.get_center_of_mass = function(){
 }
 Man.prototype.update_center_of_mass = function(accel){
 	for (var i = 0; i < 2; i++){
-		this.centerOfMass[i] += this.vel[0] * dt + 0.5 * accel * Math.pow(dt, 2);
+		this.centerOfMass[i] += this.vel[i] * dt + 0.5 * accel[i] * Math.pow(dt, 2);
 		this.vel[i] += accel[i] * dt;
 	}
-	//this.diff = [this.centerOfMass[0] - this.origCenterOfMass[0],
-				//this.centerOfMass[1] - this.origCenterOfMass[1]];
-	this.diff[1] += 5;
+	this.diff = [this.centerOfMass[0] - this.origCenterOfMass[0],
+				this.centerOfMass[1] - this.origCenterOfMass[1]];
+}
+Man.prototype.is_on_ground = function(){
+	for (var limb in this.limbList){
+		if (this.limbList[limb].get_pos2()[1] + this.diff[1] > ground){
+			return true;
+		}
+	}
+
+	if (this.get_head_pos()[1] > ground){
+		return true;
+	}
+	return false;
 }

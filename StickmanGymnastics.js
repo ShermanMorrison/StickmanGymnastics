@@ -38,11 +38,21 @@ var update = function(){
 
 	//IN_GAME:
 
-	//if (!JUMP){
-	//	ON_GROUND = man.is_on_ground();
-	//}
-	man.update_center_of_mass(g);
+	if (!JUMP){
+		ON_GROUND = man.is_on_ground();
+	}
+	
+	if (!ON_GROUND){
+		man.update_center_of_mass(g);
+		//get moment about cm
+	}
 
+	if (!man.is_on_ground()){
+
+	}
+	else{
+
+	}
 }
 
 var render = function(){
