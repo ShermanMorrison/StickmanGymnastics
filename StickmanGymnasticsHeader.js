@@ -17,7 +17,7 @@ var context = canvas.getContext('2d');
 
 //game vars
 var keysDown = {};
-var JUMP, ON_GROUND = false;
+
 
 xo = 300;
 yo = 450;
@@ -28,6 +28,12 @@ dt = .2;
 
 ground = height - 20;
 
+STANDING = '';
+LONG = 'w';
+ARCHED = 'e';
+HOLLOW = 'r';
+TUCKED = 't';
+RUNNING = 'arrow';
 
 
 ////////////////////
@@ -45,7 +51,6 @@ var angle_to_vector = function(angle){
 //class definitions//
 /////////////////////
 function Limb(pos1,angle,length){
-	//this.pos1 = [0,0]; // x,y position of one end
 	this.pos1 = pos1;
 	this.angle = angle;
 	this.len = length;
@@ -55,15 +60,6 @@ function Limb(pos1,angle,length){
 	for (var i = 0; i < 2; i++){
 		this.pos2[i] = pos1[i] + length * limbUnitVector[i];
 	}
-	//alert("pos2 = " + this.pos2);
-	//document.write("limbEnd = " + limbEnd);
-
-	// this.pos2[0] = limbEnd[0];
-	// this.pos2[1] = limbEnd[1];
-	//this.pos2 = this.get_end();
-	//this.pos2 = [100,100];
-	
-
 }
 Limb.prototype.draw = function(offset){
 	//var ctx=canvas.getContext("2d");
@@ -103,7 +99,10 @@ Limb.prototype.set_pos2 = function(newPos){
 }
 
 function Man(){
-	var that = this;
+	this.JUMP, this.ONGROUND = false;
+	this.RIGHT = true;
+	this.STATE = 0;
+	this.net_body_change = 0;
 	this.neckBase = [xo,yo];
 	this.limbList = [];
 	this.limbAngles = [-30*rad,-45*rad,10*rad,10*rad,35*rad,3*rad,10*rad,-25*rad,-5*rad];
@@ -111,7 +110,16 @@ function Man(){
 	//alert("rad = " + rad);
 	//alert("this.limbAngles[0] = " + this.limbAngles[0]);
 
+	this.make_limb_list();
 
+	this.origCenterOfMass = this.get_center_of_mass();
+	this.centerOfMass = this.get_center_of_mass(); //this will be updated as stickman moves
+
+	this.vel = [0,0];
+	this.diff = [0,0];
+}
+Man.prototype.make_limb_list = function(){
+	this.limbList = [];
 	this.limbList.push(new Limb(this.neckBase, this.limbAngles[0], this.limbLengths[0])); //torso
 	this.limbList.push(new Limb(this.neckBase, this.limbAngles[1], this.limbLengths[1])); //left upper arm
 	this.limbList.push(new Limb(this.neckBase, this.limbAngles[2], this.limbLengths[2])); //right upper arm
@@ -134,12 +142,6 @@ function Man(){
 	//right lower leg
 	this.limbList.push(new Limb([xc + angle_to_vector(this.limbAngles[6])[0] * this.limbLengths[6],yc + angle_to_vector(this.limbAngles[6])[1] * this.limbLengths[6]],this.limbAngles[8],this.limbLengths[8]));	
 
-
-	this.origCenterOfMass = this.get_center_of_mass();
-	this.centerOfMass = this.get_center_of_mass(); //this will be updated as stickman moves
-
-	this.vel = [0,0];
-	this.diff = [0,0];
 }
 Man.prototype.draw = function(){
 	//draw head
@@ -225,4 +227,49 @@ Man.prototype.is_on_ground = function(){
 		return true;
 	}
 	return false;
+}
+Man.prototype.conform_rigid_man = function(){
+
+	newLimbAngles = [-30*rad,-45*rad,10*rad,10*rad,35*rad,3*rad,10*rad,-25*rad,-5*rad];
+
+	if (this.STATE = STANDING){
+		newLimbAngles = [-30*rad,-45*rad,10*rad,10*rad,35*rad,3*rad,10*rad,-25*rad,-5*rad];
+	}
+	else if (this.STATE = ARCHED){
+		newLimbAngles = [10*rad,210*rad,230*rad,190*rad,220*rad,10*rad,50*rad,35*rad,45*rad];
+	}
+	else if (this.STATE = HOLLOW){
+		newLimbAngles = [0*rad,160*rad,110*rad,170*rad,150*rad,-20*rad,30*rad,-30*rad,-35*rad];
+	}
+	else if (this.STATE = TUCKED){
+		newLimbAngles = [-30*rad,-40*rad,-25*rad,35*rad,45*rad,105*rad,120*rad,-20*rad,-30*rad];
+	}
+	else if (this.STATE = LONG){
+		newLimbAngles = [0*rad,-150*rad,150*rad,-170*rad,170*rad,-20*rad,20*rad,-10*rad,10*rad];
+	}
+	else if (this.STATE = RUNNING){
+		//complete..
+	}
+
+	//flip sign of angles if facing left
+	if (!this.RIGHT){
+		for (var i in newLimbAngles){
+			newLimbAngles[i] *= -1;
+		}
+	}
+
+	//update limb angles and calculate netChange
+	for (var i in this.limbAngles){
+		this.limbAngles[i] += 0.15 * (newLimbAngles[i] - this.limbAngles[i]);
+		this.netChange += 3000 * (newLimbAngles[i] - this.limbAngles[i]);
+	}
+}
+Man.prototype.set_state = function(char){
+	this.STATE = char;
+}
+Man.prototype.set_right = function(){
+	this.RIGHT = true;
+}
+Man.prototype.set_left = function(){
+	this.RIGHT = false;
 }

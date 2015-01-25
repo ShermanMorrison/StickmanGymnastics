@@ -7,7 +7,13 @@
 ///////////////////
 //event listeners//
 ///////////////////
+window.addEventListener("keydown", function(event){
+	keysDown[event.keyCode] = true;
+});
 
+window.addEventListener("keyup", function(event){
+	delete keysDown[event.keyCode];
+});
 
 
 ///////////
@@ -34,15 +40,49 @@ var step = function(){
 }
 
 var update = function(){
+// 	STANDING = 0;
+// ARCHED = 1;
+// HOLLOW = 2;
+// TUCKED = 3;
+// LONG = 4;
+// RUNNING = 5;
+	for (var key in keysDown){
+		if (key == 87){
+			man.set_state(LONG);
+		}
+		else if (key == 69){
+			man.set_state(ARCHED);
+		}
+		else if (key == 82){
+			man.set_state(HOLLOW);
+		}	
+		else if (key == 84){
+			man.set_state(TUCKED);
+		}
+		else{
+			man.set_state(STANDING);
+		}
+		if (key == 37){
+			man.set_left();
+		}
+		if (key == 39){
+			man.set_right();
+		}
 
+	}
 
 	//IN_GAME:
 
-	if (!JUMP){
-		ON_GROUND = man.is_on_ground();
+
+	if (!man.JUMP){
+		man.ONGROUND = man.is_on_ground();
 	}
-	
-	if (!ON_GROUND){
+
+	man.conform_rigid_man(); //get new body angles
+	man.make_limb_list(); //update limbList
+
+
+	if (!man.ONGROUND){
 		man.update_center_of_mass(g);
 		//get moment about cm
 	}
