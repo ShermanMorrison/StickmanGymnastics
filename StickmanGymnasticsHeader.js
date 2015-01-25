@@ -101,7 +101,7 @@ Limb.prototype.set_pos2 = function(newPos){
 function Man(){
 	this.JUMP, this.ONGROUND = false;
 	this.RIGHT = true;
-	this.STATE = 0;
+	this.STATE = STANDING;
 	this.net_body_change = 0;
 	this.neckBase = [xo,yo];
 	this.limbList = [];
@@ -232,22 +232,22 @@ Man.prototype.conform_rigid_man = function(){
 
 	newLimbAngles = [-30*rad,-45*rad,10*rad,10*rad,35*rad,3*rad,10*rad,-25*rad,-5*rad];
 
-	if (this.STATE = STANDING){
+	if (this.STATE == STANDING){
 		newLimbAngles = [-30*rad,-45*rad,10*rad,10*rad,35*rad,3*rad,10*rad,-25*rad,-5*rad];
 	}
-	else if (this.STATE = ARCHED){
+	else if (this.STATE == ARCHED){
 		newLimbAngles = [10*rad,210*rad,230*rad,190*rad,220*rad,10*rad,50*rad,35*rad,45*rad];
 	}
-	else if (this.STATE = HOLLOW){
+	else if (this.STATE == HOLLOW){
 		newLimbAngles = [0*rad,160*rad,110*rad,170*rad,150*rad,-20*rad,30*rad,-30*rad,-35*rad];
 	}
-	else if (this.STATE = TUCKED){
+	else if (this.STATE == TUCKED){
 		newLimbAngles = [-30*rad,-40*rad,-25*rad,35*rad,45*rad,105*rad,120*rad,-20*rad,-30*rad];
 	}
-	else if (this.STATE = LONG){
+	else if (this.STATE == LONG){
 		newLimbAngles = [0*rad,-150*rad,150*rad,-170*rad,170*rad,-20*rad,20*rad,-10*rad,10*rad];
 	}
-	else if (this.STATE = RUNNING){
+	else if (this.STATE == RUNNING){
 		//complete..
 	}
 

@@ -46,6 +46,9 @@ var update = function(){
 // TUCKED = 3;
 // LONG = 4;
 // RUNNING = 5;
+
+	man.set_state(STANDING);
+
 	for (var key in keysDown){
 		if (key == 87){
 			man.set_state(LONG);
@@ -58,9 +61,6 @@ var update = function(){
 		}	
 		else if (key == 84){
 			man.set_state(TUCKED);
-		}
-		else{
-			man.set_state(STANDING);
 		}
 		if (key == 37){
 			man.set_left();
