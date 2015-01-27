@@ -40,13 +40,6 @@ var step = function(){
 }
 
 var update = function(){
-// 	STANDING = 0;
-// ARCHED = 1;
-// HOLLOW = 2;
-// TUCKED = 3;
-// LONG = 4;
-// RUNNING = 5;
-
 	man.set_state(STANDING);
 
 	for (var key in keysDown){
@@ -81,18 +74,39 @@ var update = function(){
 	man.conform_rigid_man(); //get new body angles
 	man.make_limb_list(); //update limbList
 
-
-	if (!man.ONGROUND){
+	//stickman is in the air
+	if (!man.ONGROUND){	
 		man.update_center_of_mass(g);
-		//get moment about cm
+		// CASE 1 : He is still in the air
+		man.rotate(); //rotate man
+
+		if (man.is_on_ground()){
+			man.ONGROUND = true;
+
+		}
+		// CASE 2 : He has just landed
 	}
 
-	if (!man.is_on_ground()){
+	//stickman is on the ground
+	else{	
+		if (!(man.STATE == ARCHED)){
+			// reduce stickman's rotational momentum by a lot
+		}
+		else {
+			//reduce stickman's rotation momentum by a little
+		}
+
+
+		// CASE 1 : JUMP
+
+		// CASE 2 : RUN
+
+		// CASE Else : Rotate stickman about ground fulcrum
+
 
 	}
-	else{
 
-	}
+
 }
 
 var render = function(){

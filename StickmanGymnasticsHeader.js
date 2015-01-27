@@ -1,3 +1,5 @@
+"use strict";
+
 var animate = window.requestAnimationFrame || 
 			window.webkitRequestAnimationFrame ||
 			window.mozRequestAnimationFrame ||
@@ -19,21 +21,21 @@ var context = canvas.getContext('2d');
 var keysDown = {};
 
 
-xo = 300;
-yo = 450;
-rad = Math.PI/180;
-g = [0,5];
-headWeight = 80;
-dt = .2;
+var xo = 300;
+var yo = 450;
+var rad = Math.PI/180;
+var g = [0,5];
+var headWeight = 80;
+var dt = .2;
 
-ground = height - 20;
+var ground = height - 20;
 
-STANDING = '';
-LONG = 'w';
-ARCHED = 'e';
-HOLLOW = 'r';
-TUCKED = 't';
-RUNNING = 'arrow';
+var STANDING = '';
+var LONG = 'w';
+var ARCHED = 'e';
+var HOLLOW = 'r';
+var TUCKED = 't';
+var RUNNING = 'arrow';
 
 
 ////////////////////
@@ -45,7 +47,9 @@ var angle_to_vector = function(angle){
 	//alert(Math.sin(angle) + ", " + Math.cos(angle));
 	return [Math.sin(angle), Math.cos(angle)]; // angle is from downwards vertical
 }
-
+var get_dist = function(vector1, vector2){
+	return Math.sqrt(Math.pow(vector1[0] - vector2[0],2),Math.pow(vector1[1] - vector2[0],2));
+}
 
 /////////////////////
 //class definitions//
@@ -115,8 +119,10 @@ function Man(){
 	this.origCenterOfMass = this.get_center_of_mass();
 	this.centerOfMass = this.get_center_of_mass(); //this will be updated as stickman moves
 
+	this.netChange = 0;
 	this.vel = [0,0];
 	this.diff = [0,0];
+	this.rotationalMomentum = 0;
 }
 Man.prototype.make_limb_list = function(){
 	this.limbList = [];
@@ -129,8 +135,8 @@ Man.prototype.make_limb_list = function(){
 	//right lower arm
 	this.limbList.push(new Limb([xo + angle_to_vector(this.limbAngles[2])[0] * this.limbLengths[2], yo + angle_to_vector(this.limbAngles[2])[1] * this.limbLengths[2]],this.limbAngles[4], this.limbLengths[4])); //left lower arm
 	
-    xc = this.neckBase[0] + angle_to_vector(this.limbAngles[0])[0] * this.limbLengths[0]; 
-    yc = this.neckBase[1] + angle_to_vector(this.limbAngles[0])[1] * this.limbLengths[0];
+    var xc = this.neckBase[0] + angle_to_vector(this.limbAngles[0])[0] * this.limbLengths[0]; 
+    var yc = this.neckBase[1] + angle_to_vector(this.limbAngles[0])[1] * this.limbLengths[0];
 
 	//left upper leg
 	this.limbList.push(new Limb([xc,yc],this.limbAngles[5],this.limbLengths[5]));
@@ -145,7 +151,7 @@ Man.prototype.make_limb_list = function(){
 }
 Man.prototype.draw = function(){
 	//draw head
- 	headPos = [this.diff[0] + this.limbList[0].get_pos1()[0] - .2*(this.limbList[0].get_pos2()[0] - this.limbList[0].get_pos1()[0]), 
+ 	var headPos = [this.diff[0] + this.limbList[0].get_pos1()[0] - .2*(this.limbList[0].get_pos2()[0] - this.limbList[0].get_pos1()[0]), 
  				this.diff[1] + this.limbList[0].get_pos1()[1] - .2*(this.limbList[0].get_pos2()[1] - this.limbList[0].get_pos1()[1])]
  	context.beginPath();
 	context.arc(headPos[0], headPos[1], 8, 2*Math.PI, false);
@@ -168,15 +174,15 @@ Man.prototype.get_head_pos = function(){
 					this.limbList[0].get_pos1()[1]) ];
 }
 Man.prototype.get_center_of_mass = function(){
-	xCenters = [];
-    yCenters = [];
-    xcm = 0;
-    ycm = 0;
+	var xCenters = [];
+    var yCenters = [];
+    var xcm = 0;
+    var ycm = 0;
     
-    totWeight = 0;
+    var totWeight = 0;
 
     for (var limbo in this.limbList){
-    	limb = this.limbList[limbo];
+    	var limb = this.limbList[limbo];
     	totWeight += limb.len;
     	try{
 	    	xCenters.push(limb.get_pos1()[0] + limb.get_pos2()[0] * .5);
@@ -189,12 +195,12 @@ Man.prototype.get_center_of_mass = function(){
 
     //add head weight
     try{
-    	neckBase = this.limbList[0].get_pos1();
+    	this.neckBase = this.limbList[0].get_pos1();
 	}
 	catch(err){
 		document.write("limbList[0].get_pos1() method is null");
 	}
-    headPos = this.get_head_pos();
+    var headPos = this.get_head_pos();
 
     totWeight += headWeight;
 
@@ -208,6 +214,37 @@ Man.prototype.get_center_of_mass = function(){
 
     return [xcm, ycm];
 }
+
+
+Man.prototype.rotate = function(pos){
+	/**
+	/ Rotate man about 2d pos.
+	**/
+	var moment = this.get_moment(pos);
+	var incAngle = this.rotationalMomentum / moment * dt;
+	this.rotate_rigid_man(pos, incAngle);
+}
+Man.prototype.get_moment = function(pos){
+	// 
+	// Get Moment of Inertia about a 2d pos. Includes diff offset.
+	// pos should be cm or ground fulcrum
+	// 
+
+	var moment = 0;
+	var distx, disty;
+	for (var limb in this.limbList){
+		distx = 0.5 * (this.limbList[limb].get_pos1()[0] + this.limbList[limb].get_pos2()[0]);
+		disty = 0.5 * (this.limbList[limb].get_pos1()[1] + this.limbList[limb].get_pos2()[1]);
+		moment += distx * distx + disty * disty * this.limbList[limb].get_length();
+	}
+
+	moment +=  headWeight * Math.pow(get_dist(this.get_head_pos(), pos),2);
+
+}
+Man.prototype.rotate_rigid_man = function(pos, incAngle){
+	
+}
+
 Man.prototype.update_center_of_mass = function(accel){
 	for (var i = 0; i < 2; i++){
 		this.centerOfMass[i] += this.vel[i] * dt + 0.5 * accel[i] * Math.pow(dt, 2);
@@ -230,7 +267,7 @@ Man.prototype.is_on_ground = function(){
 }
 Man.prototype.conform_rigid_man = function(){
 
-	newLimbAngles = [-30*rad,-45*rad,10*rad,10*rad,35*rad,3*rad,10*rad,-25*rad,-5*rad];
+	var newLimbAngles = [-30*rad,-45*rad,10*rad,10*rad,35*rad,3*rad,10*rad,-25*rad,-5*rad];
 
 	if (this.STATE == STANDING){
 		newLimbAngles = [-30*rad,-45*rad,10*rad,10*rad,35*rad,3*rad,10*rad,-25*rad,-5*rad];
