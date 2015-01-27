@@ -48,7 +48,13 @@ var angle_to_vector = function(angle){
 	return [Math.sin(angle), Math.cos(angle)]; // angle is from downwards vertical
 }
 var get_dist = function(vector1, vector2){
-	return Math.sqrt(Math.pow(vector1[0] - vector2[0],2),Math.pow(vector1[1] - vector2[0],2));
+	try{
+		return Math.sqrt(Math.pow(vector1[0] - vector2[0],2),Math.pow(vector1[1] - vector2[1],2));
+	}
+	catch(err){
+		document.write("Error: get_dist requires two 2d arrays");
+	}
+
 }
 
 /////////////////////
@@ -84,7 +90,7 @@ Limb.prototype.get_angle = function(){
 	return this.angle;
 }
 Limb.prototype.get_length = function(){
-	return this.length;
+	return this.len;
 }
 Limb.prototype.get_end = function(){
 	var limbUnitVector = angle_to_vector(self.angle);
@@ -239,10 +245,14 @@ Man.prototype.get_moment = function(pos){
 	}
 
 	moment +=  headWeight * Math.pow(get_dist(this.get_head_pos(), pos),2);
-
+	return moment;
 }
 Man.prototype.rotate_rigid_man = function(pos, incAngle){
-	
+	for (var limb in this.limbList){
+		//TODO: FIX ERROR IN THIS LINE:
+		//this.limbList[limb].pos1 = Math.cos(incAngle) * this.limbList[limb].pos1 +-1 * Math.sin(incAngle) * this.limbList[limb].pos2;
+
+	}
 }
 
 Man.prototype.update_center_of_mass = function(accel){

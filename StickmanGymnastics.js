@@ -78,7 +78,7 @@ var update = function(){
 	if (!man.ONGROUND){	
 		man.update_center_of_mass(g);
 		// CASE 1 : He is still in the air
-		man.rotate(); //rotate man
+		man.rotate(man.get_center_of_mass()); //rotate man
 
 		if (man.is_on_ground()){
 			man.ONGROUND = true;
