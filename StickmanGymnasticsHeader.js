@@ -120,15 +120,15 @@ function Man(){
 	//alert("rad = " + rad);
 	//alert("this.limbAngles[0] = " + this.limbAngles[0]);
 
-	this.make_limb_list();
-
-	this.origCenterOfMass = this.get_center_of_mass();
-	this.centerOfMass = this.get_center_of_mass(); //this will be updated as stickman moves
-
 	this.netChange = 0;
 	this.vel = [0,0];
-	this.diff = [0,0];
+	this.diff = [0,0]; //this will be updated as stickman moves
 	this.rotationalMomentum = 0;
+
+	this.make_limb_list();
+
+	this.origCenterOfMass = this.get_center_of_mass(); // set origCenterOfMass to correct position
+
 }
 Man.prototype.make_limb_list = function(){
 	this.limbList = [];
@@ -172,6 +172,11 @@ Man.prototype.draw = function(){
 		 	this.limbList[limb].draw(this.diff);
 		 }
 	}
+ 	context.beginPath();
+	context.arc(this.origCenterOfMass[0] + this.diff[0], this.origCenterOfMass[1] + this.diff[1], 4, 2*Math.PI, false);
+	context.fillStyle = "#000000";
+	context.fill();
+
 }
 Man.prototype.get_head_pos = function(){
 	return [this.limbList[0].get_pos1()[0] - 0.2 * (this.limbList[0].get_pos2()[0] - 
@@ -191,8 +196,12 @@ Man.prototype.get_center_of_mass = function(){
     	var limb = this.limbList[limbo];
     	totWeight += limb.len;
     	try{
-	    	xCenters.push(limb.get_pos1()[0] + limb.get_pos2()[0] * .5);
-			yCenters.push(limb.get_pos1()[1] + limb.get_pos2()[1] * .5);
+	    	xCenters.push(.5 * limb.get_pos1()[0] + .5 * limb.get_pos2()[0]);
+			yCenters.push(.5 * limb.get_pos1()[1] + .5 * limb.get_pos2()[1]);
+			context.beginPath();
+			context.arc(limb.get_pos1()[0] + limb.get_pos2()[0] * .5, limb.get_pos1()[1] + limb.get_pos2()[1] * .5, 12, 2*Math.PI, false);
+			context.fillStyle = "#000000";
+			context.fill();
 		}
 		catch(err){
 			document.write("limb in limbList has l1 = " + this.limbList[0] + " ");
@@ -208,20 +217,23 @@ Man.prototype.get_center_of_mass = function(){
 	}
     var headPos = this.get_head_pos();
 
-    totWeight += headWeight;
+ 	context.beginPath();
+	context.arc(headPos[0], headPos[1], 12, 2*Math.PI, false);
+	context.fillStyle = "#000000";
+	context.fill();
+
+    // totWeight += headWeight;
 
     for (var i = 0; i < this.limbList.length; i++){
     	xcm += (xCenters[i] * this.limbLengths[i])/totWeight;
     	ycm += (yCenters[i] * this.limbLengths[i])/totWeight;
     }
 
-    xcm += headPos[0] * headWeight / totWeight;
-    ycm += headPos[1] * headWeight / totWeight;
+    //xcm += headPos[0] * headWeight / totWeight;
+    //ycm += headPos[1] * headWeight / totWeight;
 
     return [xcm, ycm];
 }
-
-
 Man.prototype.rotate = function(pos){
 	/**
 	/ Rotate man about 2d pos.
@@ -248,20 +260,32 @@ Man.prototype.get_moment = function(pos){
 	return moment;
 }
 Man.prototype.rotate_rigid_man = function(pos, incAngle){
+
+	context.beginPath();
+	context.arc(pos[0], pos[1], 4, 2*Math.PI, false);
+	context.fillStyle = "#000000";
+	context.fill();
+
 	for (var limb in this.limbList){
-		//TODO: FIX ERROR IN THIS LINE:
-		//this.limbList[limb].pos1 = Math.cos(incAngle) * this.limbList[limb].pos1 +-1 * Math.sin(incAngle) * this.limbList[limb].pos2;
+		this.limbList[limb].pos1[0] = Math.cos(incAngle) * this.limbList[limb].pos1[0] + -1 * Math.sin(incAngle) * this.limbList[limb].pos1[1];
+		this.limbList[limb].pos1[1] = Math.cos(incAngle) * this.limbList[limb].pos1[0] +  1 * Math.sin(incAngle) * this.limbList[limb].pos1[1];
+
+		this.limbList[limb].pos2[0] = Math.cos(incAngle) * this.limbList[limb].pos2[0] + -1 * Math.sin(incAngle) * this.limbList[limb].pos2[1];
+		this.limbList[limb].pos2[1] = Math.cos(incAngle) * this.limbList[limb].pos2[0] +  1 * Math.sin(incAngle) * this.limbList[limb].pos2[1];
 
 	}
 }
-
-Man.prototype.update_center_of_mass = function(accel){
+Man.prototype.update_diff_by_accel = function(accel){
 	for (var i = 0; i < 2; i++){
-		this.centerOfMass[i] += this.vel[i] * dt + 0.5 * accel[i] * Math.pow(dt, 2);
+		this.diff[i] += this.vel[i] * dt + 0.5 * accel[i] * Math.pow(dt, 2);
 		this.vel[i] += accel[i] * dt;
 	}
-	this.diff = [this.centerOfMass[0] - this.origCenterOfMass[0],
-				this.centerOfMass[1] - this.origCenterOfMass[1]];
+}
+Man.prototype.update_diff_by_cm = function(){
+	var new_cm = this.get_center_of_mass()
+	this.diff[0] += this.get_center_of_mass()[0] - this.origCenterOfMass[0];
+	this.diff[1] += this.get_center_of_mass()[1] - this.origCenterOfMass[1];
+	this.origCenterOfMass = new_cm;
 }
 Man.prototype.is_on_ground = function(){
 	for (var limb in this.limbList){

@@ -76,9 +76,10 @@ var update = function(){
 
 	//stickman is in the air
 	if (!man.ONGROUND){	
-		man.update_center_of_mass(g);
+		//man.update_diff_by_accel(g);
 		// CASE 1 : He is still in the air
-		man.rotate(man.get_center_of_mass()); //rotate man
+		
+		//man.rotate(man.origCenterOfMass); //rotate man
 
 		if (man.is_on_ground()){
 			man.ONGROUND = true;
@@ -89,6 +90,7 @@ var update = function(){
 
 	//stickman is on the ground
 	else{	
+
 		if (!(man.STATE == ARCHED)){
 			// reduce stickman's rotational momentum by a lot
 		}
@@ -102,7 +104,10 @@ var update = function(){
 		// CASE 2 : RUN
 
 		// CASE Else : Rotate stickman about ground fulcrum
-
+		//determine fulcrum
+		man.update_diff_by_cm(); //update cm based on body position
+		//put him back on the ground on the fulcrum
+		//update fulcrum (it may have changed after conforming rigid man) ??? When to do conform_rigid_man()?
 
 	}
 
