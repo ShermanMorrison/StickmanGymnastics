@@ -72,14 +72,14 @@ var update = function(){
 	}
 
 	man.conform_rigid_man(); //get new body angles
-	man.make_limb_list(); //update limbList
+	man.make_limb_list(); //update body's configuration, but still upright
 
 	//stickman is in the air
 	if (!man.ONGROUND){	
 		//man.update_diff_by_accel(g);
 		// CASE 1 : He is still in the air
 		
-		//man.rotate(man.origCenterOfMass); //rotate man
+		man.rotate(man.get_location()); //rotate man
 
 		if (man.is_on_ground()){
 			man.ONGROUND = true;
