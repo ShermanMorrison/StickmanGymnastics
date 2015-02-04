@@ -72,7 +72,7 @@ var update = function(){
 	}
 
 	man.conform_rigid_man(); //get new body angles
-	man.make_limb_list(); //update body's configuration, but still upright
+	man.update_limb_angles(); //update body's configuration, but still upright
 
 	//stickman is in the air
 	if (!man.ONGROUND){	

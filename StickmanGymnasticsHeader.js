@@ -42,6 +42,12 @@ var RUNNING = 'arrow';
 //global functions//
 ////////////////////
 
+var vector_to_angle = function(vector){
+	if (get_dist(vector,[0,0]) < Math.pow(10,-5)){
+		return 0;
+	}
+	return Math.atan2(vector[1], vector[0]);
+}
 var angle_to_vector = function(angle){
 	//alert(angle);
 	//alert(Math.sin(angle) + ", " + Math.cos(angle));
@@ -129,7 +135,7 @@ function Man(){
 	this.vel = [0,0];
 	this.diff = [0,0]; //this will be updated as stickman moves
 	this.angle = 0;
-	this.rotationalMomentum = 2 * Math.pow(10,0);
+	this.rotationalMomentum = 2 * Math.pow(10,6);
 
 	this.make_limb_list();
 
@@ -139,6 +145,11 @@ function Man(){
 Man.prototype.make_limb_list = function(){
 	this.limbList = [];
 	this.limbList.push(new Limb(this.limbAngles[0], this.limbLengths[0])); //torso
+
+	var backVector = angle_to_vector(this.limbAngles[0]);
+	this.limbList[0].pos1 = this.neckBase;
+	this.limbList[0].pos2 = [this.neckBase[0] + this.limbLengths[0] * backVector[0], this.neckBase[1] + this.limbLengths[1] * backVector[1]];
+
 	this.limbList.push(new Limb(this.limbAngles[1], this.limbLengths[1])); //right upper arm
 	this.limbList.push(new Limb(this.limbAngles[2], this.limbLengths[2])); //left upper arm
 
@@ -157,9 +168,16 @@ Man.prototype.make_limb_list = function(){
 	//left lower leg
 	this.limbList.push(new Limb(this.limbAngles[8],this.limbLengths[8]));	
 
-	this.set_limb_ends();
-
+	this.set_limb_ends(); //assign endpoints to the limbs (currently-null)
 }
+Man.prototype.update_limb_angles = function(){
+	for (var i in this.limbList){
+		this.limbList[i].angle = this.limbAngles[i];
+	}
+	this.set_limb_ends(); //update endpoints to the limbs according to the new angles
+}
+
+
 Man.prototype.draw = function(){
 	//draw head
  	var headPos = [this.diff[0] + this.limbList[0].get_pos1()[0] - .2*(this.limbList[0].get_pos2()[0] - this.limbList[0].get_pos1()[0]), 
@@ -192,14 +210,21 @@ Man.prototype.set_limb_ends = function(){
 		this.limbList[limb].pos2 = limb_ends[limb][1];
 	}
 }
+Man.prototype.calc_rot_angle = function(){
+	// return 0;
+	var totAngle = vector_to_angle([this.limbList[0].get_pos2()[0] - this.limbList[0].get_pos1()[0], this.limbList[0].get_pos2()[1] - this.limbList[0].get_pos1()[1]]);
+	return (totAngle - this.limbAngles[0]);
+}
+
 Man.prototype.get_limb_ends = function(){
 	var limb_ends = []; //initially ordered 0,1,3,2,4,5,7,6,8
 
 	//Limb 0
 	var index = 0;
 	var basePoint = this.neckBase;
-	var baseAngle = 0;
-	var endpoints = this.get_endpoint_pair(index, basePoint, baseAngle)
+	var rotAngle = this.calc_rot_angle();
+	var baseAngle = rotAngle;
+	var endpoints = this.get_endpoint_pair(index, basePoint, baseAngle);
 	limb_ends.push(endpoints);
 	var pos2 = endpoints[1];
 
@@ -208,53 +233,53 @@ Man.prototype.get_limb_ends = function(){
 	//Limbs 1 & 3
 	index = 1;
 	basePoint = this.neckBase;
-	baseAngle = this.limbAngles[0];
+	baseAngle = rotAngle + this.limbAngles[0];
 	endpoints = this.get_endpoint_pair(index, basePoint, baseAngle)
 	limb_ends.push(endpoints);
 	pos2 = endpoints[1];
 
 	index = 3;
 	basePoint = pos2;
-	baseAngle = this.limbAngles[0] + this.limbAngles[1];
+	baseAngle = rotAngle + this.limbAngles[0] + this.limbAngles[1];
 	limb_ends.push(this.get_endpoint_pair(index, basePoint, baseAngle));
 
 	//Limbs 2 & 4
 	index = 2;
 	basePoint = this.neckBase;
-	baseAngle = this.limbAngles[0];
+	baseAngle = rotAngle + this.limbAngles[0];
 	endpoints = this.get_endpoint_pair(index, basePoint, baseAngle)
 	limb_ends.push(endpoints);
 	pos2 = endpoints[1];
 
 	index = 4;
 	basePoint = pos2;
-	baseAngle = this.limbAngles[0] + this.limbAngles[2];
+	baseAngle = rotAngle + this.limbAngles[0] + this.limbAngles[2];
 	limb_ends.push(this.get_endpoint_pair(index, basePoint, baseAngle));
 
 	//Limbs 5 & 7
 	index = 5;
 	basePoint = hip_joint;
-	baseAngle = this.limbAngles[0];
+	baseAngle = rotAngle + this.limbAngles[0];
 	endpoints = this.get_endpoint_pair(index, basePoint, baseAngle)
 	limb_ends.push(endpoints);
 	pos2 = endpoints[1];
 
 	index = 7;
 	basePoint = pos2;
-	baseAngle = this.limbAngles[0] + this.limbAngles[5];
+	baseAngle = rotAngle + this.limbAngles[0] + this.limbAngles[5];
 	limb_ends.push(this.get_endpoint_pair(index, basePoint, baseAngle));
 
 	//Limbs 6 & 8
 	index = 6;
 	basePoint = hip_joint;
-	baseAngle = this.limbAngles[0];
+	baseAngle = rotAngle + this.limbAngles[0];
 	endpoints = this.get_endpoint_pair(index, basePoint, baseAngle)
 	limb_ends.push(endpoints);
 	pos2 = endpoints[1];
 
 	index = 8;
 	basePoint = pos2;
-	baseAngle = this.limbAngles[0] + this.limbAngles[6];
+	baseAngle = rotAngle + this.limbAngles[0] + this.limbAngles[6];
 	limb_ends.push(this.get_endpoint_pair(index, basePoint, baseAngle));
 
 	//reorder from 0,1,3,2,4,5,7,6,8
@@ -329,7 +354,7 @@ Man.prototype.rotate = function(pos){
 	var moment = this.get_moment(pos);
 	var incAngle = 1.0 * this.rotationalMomentum / moment * dt;
 	this.rotate_rigid_man(pos, incAngle);
-	this.set_limb_ends();
+	// this.set_limb_ends(); //unnecessary bc rotate_rigid_man already updates the limbs' positions
 
 }
 Man.prototype.get_moment = function(pos){
@@ -356,19 +381,26 @@ Man.prototype.rotate_rigid_man = function(pos, incAngle){
 	// context.fillStyle = "#000000";
 	// context.fill();
 
+	// this.neckBase[0] -= .1;
+	// this.neckBase[0] -= .1;
+
 	for (var limb in this.limbList){
+		//put pivot at origin
 		this.limbList[limb].pos1[0] += this.diff[0] - pos[0];
 		this.limbList[limb].pos1[1] += this.diff[1] - pos[1];
 
 		this.limbList[limb].pos2[0] += this.diff[0] - pos[0];
 		this.limbList[limb].pos2[1] += this.diff[1] - pos[1];
 
-		this.limbList[limb].pos1[0] += 0;//Math.cos(incAngle) * this.limbList[limb].pos1[0] + -1 * Math.sin(incAngle) * this.limbList[limb].pos1[1];
-		this.limbList[limb].pos1[1] += 0;//Math.sin(incAngle) * this.limbList[limb].pos1[0] +  1 * Math.cos(incAngle) * this.limbList[limb].pos1[1];
+		//rotate//
+		this.limbList[limb].pos1[0] = Math.cos(incAngle) * this.limbList[limb].pos1[0] + -1 * Math.sin(incAngle) * this.limbList[limb].pos1[1];
+		this.limbList[limb].pos1[1] = Math.sin(incAngle) * this.limbList[limb].pos1[0] +  1 * Math.cos(incAngle) * this.limbList[limb].pos1[1];
 
-		this.limbList[limb].pos2[0] += 1;//Math.cos(incAngle) * this.limbList[limb].pos2[0] + -1 * Math.sin(incAngle) * this.limbList[limb].pos2[1];
-		this.limbList[limb].pos2[1] += 1;//Math.sin(incAngle) * this.limbList[limb].pos2[0] +  1 * Math.cos(incAngle) * this.limbList[limb].pos2[1];
+		this.limbList[limb].pos2[0] = Math.cos(incAngle) * this.limbList[limb].pos2[0] + -1 * Math.sin(incAngle) * this.limbList[limb].pos2[1];
+		this.limbList[limb].pos2[1] = Math.sin(incAngle) * this.limbList[limb].pos2[0] +  1 * Math.cos(incAngle) * this.limbList[limb].pos2[1];
+		//////////
 
+		//put pivot back to original displacment
 		this.limbList[limb].pos1[0] -= this.diff[0] - pos[0];
 		this.limbList[limb].pos1[1] -= this.diff[1] - pos[1];
 
